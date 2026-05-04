@@ -40,8 +40,15 @@
     const SUPABASE_ANON_KEY = 'sb_publishable_DnD2CZFvuoCClSkDRVYwiQ_wi1oDTed';
 
     const POLL_ID = 'dinner-2026';
-    let currentVotes = [0, 0, 0, 0, 0];
-    const optionsList = ["カレー", "ラーメン", "寿司", "ピザ", "なんか適当"];
+    let currentVotes = [0, 0, 0, 0, 0, 0]; // からあげクン分増やした
+    const optionsList = [
+      "カレー", 
+      "ラーメン", 
+      "寿司", 
+      "ピザ", 
+      "からあげクン", 
+      "なんか適当"
+    ];
 
     async function loadPoll() {
       try {
@@ -54,7 +61,7 @@
         const data = await res.json();
         
         if (data && data[0]) {
-          currentVotes = data[0].votes || [0,0,0,0,0];
+          currentVotes = data[0].votes || [0,0,0,0,0,0];
           document.getElementById('question').textContent = data[0].question;
         } else {
           await createInitialPoll();
@@ -77,7 +84,7 @@
           id: POLL_ID,
           question: "今日の夕飯何食べたい？",
           options: optionsList,
-          votes: [0,0,0,0,0]
+          votes: [0,0,0,0,0,0]
         })
       });
     }
