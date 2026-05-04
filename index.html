@@ -5,67 +5,121 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>みんなで投票</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="manifest" href="manifest.json">
   <style>
-    body { font-family: system-ui; }
-    .vote-btn { transition: all 0.2s; }
+    .vote-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .vote-btn:active { transform: scale(0.95); }
   </style>
 </head>
-<body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen">
+<body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen pb-12">
   <div class="max-w-md mx-auto pt-8 px-4">
-    <h1 class="text-4xl font-bold text-center mb-2">🗳️ みんなで投票</h1>
+    <div class="flex items-center gap-3 justify-center mb-2">
+      <div class="text-4xl">🗳️</div>
+      <h1 class="text-3xl font-bold">みんなで投票</h1>
+    </div>
     <p id="question" class="text-xl text-center font-medium mb-8"></p>
 
     <div id="options" class="space-y-3"></div>
 
-    <div class="mt-10 text-center text-sm text-gray-500">
-      現在の投票数: <span id="total" class="font-bold">0</span>票
+    <div class="mt-8 text-center text-sm text-purple-600">
+      総投票数: <span id="total" class="font-bold text-2xl">0</span>票
     </div>
   </div>
 
   <script>
-    // === ここを自由に変えてね ===
-    const poll = {
-      question: "今日の夕飯何食べたい？",
-      options: ["カレー", "ラーメン", "寿司", "ピザ", "なんか適当"]
-    };
+    // ★★★ ここを自分の情報に書き換えて ★★★
+    const SUPABASE_URL = 'https://yikpghoulgvkhvgxqvap.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_DnD2CZFvuoCClSkDRVYwiQ_wi1oDTed';
 
-    let votes = [0, 0, 0, 0, 0]; // 各選択肢の票数
+    const POLL_ID = 'dinner-2026';
 
-    function render() {
-      document.getElementById('question').textContent = poll.question;
-      
-      const container = document.getElementById('options');
-      container.innerHTML = '';
-      
-      poll.options.forEach((option, i) => {
-        const percent = votes.reduce((a,b)=>a+b) === 0 ? 0 : Math.round(votes[i] / votes.reduce((a,b)=>a+b) * 100);
+    let currentVotes = [0, 0, 0, 0, 0];
+    const optionsList = ["カレー", "ラーメン", "寿司", "ピザ", "なんか適当"];
+
+    async function loadPoll() {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/polls?id=eq.${POLL_ID}`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+        const data = await res.json();
         
-        const btn = document.createElement('button');
-        btn.className = `vote-btn w-full bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-2xl p-5 text-left relative overflow-hidden`;
-        btn.innerHTML = `
-          <div class="flex justify-between items-center">
-            <span class="text-lg font-medium">${option}</span>
-            <span class="text-2xl font-bold text-purple-600">${votes[i]}</span>
-          </div>
-          <div class="h-2 bg-purple-100 mt-3 rounded-full overflow-hidden">
-            <div class="h-full bg-purple-500 transition-all" style="width: ${percent}%"></div>
-          </div>
-        `;
-        btn.onclick = () => {
-          votes[i]++;
-          render();
-          // ここに後でSupabaseとかで保存する処理入れる
-        };
-        container.appendChild(btn);
-      });
-      
-      document.getElementById('total').textContent = votes.reduce((a,b)=>a+b);
+        if (data && data[0]) {
+          currentVotes = data[0].votes || [0,0,0,0,0];
+          document.getElementById('question').textContent = data[0].question;
+        } else {
+          await createInitialPoll();
+        }
+      } catch(e) {
+        console.error("ロードエラー", e);
+      }
+      render();
     }
 
-    // 最初に描画
-    render();
+    async function createInitialPoll() {
+      await fetch(`${SUPABASE_URL}/rest/v1/polls`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: POLL_ID,
+          question: "今日の夕飯何食べたい？",
+          options: optionsList,
+          votes: [0,0,0,0,0]
+        })
+      });
+    }
+
+    async function vote(index) {
+      currentVotes[index]++;
+      
+      await fetch(`${SUPABASE_URL}/rest/v1/polls?id=eq.${POLL_ID}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ votes: currentVotes })
+      });
+      
+      render();
+    }
+
+    function render() {
+      const container = document.getElementById('options');
+      container.innerHTML = '';
+      const total = currentVotes.reduce((a, b) => a + b, 0);
+
+      optionsList.forEach((option, i) => {
+        const percent = total === 0 ? 0 : Math.round((currentVotes[i] / total) * 100);
+        
+        const btn = document.createElement('button');
+        btn.className = `vote-btn w-full bg-white border-2 border-purple-200 hover:border-purple-400 rounded-3xl p-5 text-left relative overflow-hidden shadow-sm`;
+        btn.innerHTML = `
+          <div class="flex justify-between items-center mb-3">
+            <span class="text-lg font-medium">${option}</span>
+            <span class="text-3xl font-bold text-purple-600">${currentVotes[i]}</span>
+          </div>
+          <div class="h-3 bg-purple-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700" style="width: ${percent}%"></div>
+          </div>
+        `;
+        btn.onclick = () => vote(i);
+        container.appendChild(btn);
+      });
+
+      document.getElementById('total').textContent = total;
+    }
+
+    // 起動
+    loadPoll();
+    setInterval(loadPoll, 1500);
   </script>
 </body>
 </html>
