@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>みんなで投票</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: system-ui; }
+    .vote-btn { transition: all 0.2s; }
+    .vote-btn:active { transform: scale(0.95); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen">
+  <div class="max-w-md mx-auto pt-8 px-4">
+    <h1 class="text-4xl font-bold text-center mb-2">🗳️ みんなで投票</h1>
+    <p id="question" class="text-xl text-center font-medium mb-8"></p>
+
+    <div id="options" class="space-y-3"></div>
+
+    <div class="mt-10 text-center text-sm text-gray-500">
+      現在の投票数: <span id="total" class="font-bold">0</span>票
+    </div>
+  </div>
+
+  <script>
+    // === ここを自由に変えてね ===
+    const poll = {
+      question: "今日の夕飯何食べたい？",
+      options: ["カレー", "ラーメン", "寿司", "ピザ", "なんか適当"]
+    };
+
+    let votes = [0, 0, 0, 0, 0]; // 各選択肢の票数
+
+    function render() {
+      document.getElementById('question').textContent = poll.question;
+      
+      const container = document.getElementById('options');
+      container.innerHTML = '';
+      
+      poll.options.forEach((option, i) => {
+        const percent = votes.reduce((a,b)=>a+b) === 0 ? 0 : Math.round(votes[i] / votes.reduce((a,b)=>a+b) * 100);
+        
+        const btn = document.createElement('button');
+        btn.className = `vote-btn w-full bg-white hover:bg-purple-50 border-2 border-purple-200 rounded-2xl p-5 text-left relative overflow-hidden`;
+        btn.innerHTML = `
+          <div class="flex justify-between items-center">
+            <span class="text-lg font-medium">${option}</span>
+            <span class="text-2xl font-bold text-purple-600">${votes[i]}</span>
+          </div>
+          <div class="h-2 bg-purple-100 mt-3 rounded-full overflow-hidden">
+            <div class="h-full bg-purple-500 transition-all" style="width: ${percent}%"></div>
+          </div>
+        `;
+        btn.onclick = () => {
+          votes[i]++;
+          render();
+          // ここに後でSupabaseとかで保存する処理入れる
+        };
+        container.appendChild(btn);
+      });
+      
+      document.getElementById('total').textContent = votes.reduce((a,b)=>a+b);
+    }
+
+    // 最初に描画
+    render();
+  </script>
+</body>
+</html>
