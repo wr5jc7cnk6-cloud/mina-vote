@@ -38,9 +38,9 @@
   <!-- 下部固定エリア -->
   <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 max-w-md mx-auto">
     <div class="px-4 py-3 text-center">
-      <p class="text-sm text-gray-600 mb-2">この投票のお問い合わせ番号</p>
-      <p class="font-mono text-lg font-bold text-purple-600 bg-purple-50 py-1 px-4 inline-block rounded-xl">
-        254PDCLI
+      <p class="text-sm text-gray-600 mb-1">この投票のお問い合わせ番号</p>
+      <p id="inquiry-number" 
+         class="font-mono text-xl font-bold text-purple-600 bg-purple-50 py-2 px-6 inline-block rounded-2xl tracking-widest min-h-[52px] flex items-center justify-center">
       </p>
     </div>
     
@@ -59,13 +59,31 @@
     const POLL_ID = 'dinner-2026';
     let currentVotes = [0, 0, 0, 0, 0, 0];
     const optionsList = [
-      "カレー", 
-      "ラーメン", 
-      "寿司", 
-      "ピザ", 
-      "からあげクン", 
-      "なんか適当"
+      "カレー", "ラーメン", "寿司", "ピザ", "からあげクン", "なんか適当"
     ];
+
+    function getInquiryNumber() {
+      let number = localStorage.getItem('inquiryNumber');
+      if (!number) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        number = '';
+        for (let i = 0; i < 8; i++) {
+          number += chars[Math.floor(Math.random() * chars.length)];
+        }
+        localStorage.setItem('inquiryNumber', number);
+      }
+      return number;
+    }
+
+    // 番号生成に1.5秒かける演出
+    function showInquiryNumber() {
+      const el = document.getElementById('inquiry-number');
+      el.textContent = "生成中...";
+      
+      setTimeout(() => {
+        el.textContent = getInquiryNumber();
+      }, 1500);
+    }
 
     async function loadPoll() {
       try {
@@ -177,6 +195,8 @@
       });
     }
 
+    // 起動
+    showInquiryNumber();
     loadPoll();
     setInterval(loadPoll, 1500);
   </script>
