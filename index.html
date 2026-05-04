@@ -8,6 +8,9 @@
   <style>
     .vote-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .vote-btn:active { transform: scale(0.95); }
+    .rank-card { transition: all 0.4s ease; }
+    .rank-area { width: 72px; flex-shrink: 0; text-align: center; }
+    .vote-area { width: 68px; flex-shrink: 0; text-align: right; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen pb-12">
@@ -20,18 +23,23 @@
 
     <div id="options" class="space-y-3"></div>
 
+    <div class="mt-10">
+      <h2 class="text-lg font-bold text-purple-700 mb-4 flex items-center gap-2">
+        🏆 現在のランキング
+      </h2>
+      <div id="ranking" class="space-y-3"></div>
+    </div>
+
     <div class="mt-8 text-center text-sm text-purple-600">
       総投票数: <span id="total" class="font-bold text-2xl">0</span>票
     </div>
   </div>
 
   <script>
-    // ★★★ ここを自分の情報に書き換えて ★★★
     const SUPABASE_URL = 'https://yikpghoulgvkhvgxqvap.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_DnD2CZFvuoCClSkDRVYwiQ_wi1oDTed';
 
     const POLL_ID = 'dinner-2026';
-
     let currentVotes = [0, 0, 0, 0, 0];
     const optionsList = ["カレー", "ラーメン", "寿司", "ピザ", "なんか適当"];
 
@@ -76,7 +84,6 @@
 
     async function vote(index) {
       currentVotes[index]++;
-      
       await fetch(`${SUPABASE_URL}/rest/v1/polls?id=eq.${POLL_ID}`, {
         method: 'PATCH',
         headers: {
@@ -87,7 +94,6 @@
         },
         body: JSON.stringify({ votes: currentVotes })
       });
-      
       render();
     }
 
@@ -98,7 +104,6 @@
 
       optionsList.forEach((option, i) => {
         const percent = total === 0 ? 0 : Math.round((currentVotes[i] / total) * 100);
-        
         const btn = document.createElement('button');
         btn.className = `vote-btn w-full bg-white border-2 border-purple-200 hover:border-purple-400 rounded-3xl p-5 text-left relative overflow-hidden shadow-sm`;
         btn.innerHTML = `
@@ -114,10 +119,40 @@
         container.appendChild(btn);
       });
 
+      renderRanking(total);
       document.getElementById('total').textContent = total;
     }
 
-    // 起動
+    function renderRanking(total) {
+      const container = document.getElementById('ranking');
+      container.innerHTML = '';
+
+      const ranked = optionsList.map((option, i) => ({
+        name: option,
+        votes: currentVotes[i]
+      })).sort((a, b) => b.votes - a.votes);
+
+      ranked.forEach((item, rank) => {
+        let rankDisplay = '';
+        if (rank === 0) rankDisplay = '🥇';
+        else if (rank === 1) rankDisplay = '🥈';
+        else if (rank === 2) rankDisplay = '🥉';
+        else rankDisplay = `<span class="text-3xl font-bold text-purple-600">${rank + 1}</span><span class="text-base text-purple-500 ml-0.5">位</span>`;
+
+        const div = document.createElement('div');
+        div.className = `rank-card flex items-center gap-4 bg-white rounded-2xl p-5 border ${rank < 3 ? 'border-yellow-400 shadow-md' : 'border-gray-200'}`;
+        div.innerHTML = `
+          <div class="rank-area text-5xl">${rankDisplay}</div>
+          <div class="flex-1 text-lg font-medium">${item.name}</div>
+          <div class="vote-area">
+            <div class="text-4xl font-bold text-purple-600 leading-none">${item.votes}</div>
+            <div class="text-xs text-gray-500 mt-0.5">票</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
     loadPoll();
     setInterval(loadPoll, 1500);
   </script>
